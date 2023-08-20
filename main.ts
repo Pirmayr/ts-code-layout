@@ -1,9 +1,7 @@
-// $(MSBuildProjectDirectory)\..\..\moveIT.Graphics.Viewer c:\usr viewer.ts tools.ts globals.ts accessors.ts attributeAccessors.ts babylonTypes.ts decorators.ts sequences.ts tests.ts usage.ts viewerBase.ts
-
-import { ClassDeclaration, CommentStatement, EnumDeclaration, FunctionDeclaration, ImportDeclaration, Node, Project, SyntaxKind, TypeAliasDeclaration, VariableStatement, InterfaceDeclaration, VariableDeclarationKind } from 'ts-morph'
 import * as fs from "fs";
-import * as readline from "readline";
 import { strict as assert } from 'node:assert';
+import * as readline from "readline";
+import { ClassDeclaration, CommentStatement, EnumDeclaration, FunctionDeclaration, ImportDeclaration, Node, Project, SyntaxKind, TypeAliasDeclaration, VariableStatement, InterfaceDeclaration, VariableDeclarationKind } from 'ts-morph'
 
 enum Exportness
 {
@@ -50,9 +48,111 @@ const undefinedKind = undefined as SyntaxKind;
 const undefinedPersistance = undefined as Persistance;
 const undefinedRegex = undefined as RegExp;
 
+class Element
+{
+  public headerness: Headerness = undefinedHeaderness;
+  public exportness: Exportness = undefinedExportness;
+  public importness: Importness = undefinedImportness;
+  public kind: SyntaxKind = undefinedKind;
+  public persistance: Persistance = undefinedPersistance;
+  public name: string = emptyString;
+  public text: string = emptyString;
+
+  public constructor(headerness: Headerness, importness: Importness, kind: SyntaxKind, exportness: Exportness, persistance: Persistance, name: string, text: string)
+  {
+    this.headerness = headerness;
+    this.importness = importness;
+    this.kind = kind;
+    this.exportness = exportness;
+    this.persistance = persistance;
+    this.name = name;
+    this.text = text;
+  }
+}
+
+abstract class MappedSortOrder<K, P> extends Map<K, number> implements SortOrder
+{
+  protected readonly traitAccessor: TraitAccessor<P>
+
+  public constructor(traitAccessor: TraitAccessor<P>,  parameters: P[])
+  {
+    super();
+    this.traitAccessor = traitAccessor;
+    this.setParameters(parameters);
+  }
+
+  public compare(element1: Element, element2: Element): number
+  {
+    const rank1 = this.getRank(element1) ?? Number.MAX_SAFE_INTEGER;
+    const rank2 = this.getRank(element2) ?? Number.MAX_SAFE_INTEGER;
+    return rank1 === rank2 ? 0 : rank1 < rank2 ? -1 : 1;
+  }
+
+  abstract getRank(element: Element);
+  abstract setParameters(parameters: P[]);
+}
+
+class NameSortOrder implements SortOrder
+{
+  public compare(element1: Element, element2: Element): number
+  {
+    return element1.name.localeCompare(element2.name);
+  }
+}
+
+class RegularExpressionSortOrder extends MappedSortOrder<RegExp, string>
+{
+  public constructor(traitAccessor: TraitAccessor<string>,  parameters: string[])
+  {
+    super(traitAccessor, parameters);
+  }
+
+  public getRank(element: Element): number
+  {
+    const key = this.traitAccessor(element);
+    for (const [regex, rank] of this)
+    {
+      if (regex !== undefined && regex.test(key))
+      {
+        return rank;
+      }
+    }
+    return this.get(undefinedRegex) ?? Number.MAX_SAFE_INTEGER;
+  }
+
+  public setParameters(parameters: string[])
+  {
+    for (const parameter of parameters)
+    {
+      this.set(parameter === undefined ? undefinedRegex : new RegExp(parameter), this.size);
+    }
+  }
+}
+
+class TraitSortOrder<T> extends MappedSortOrder<T, T>
+{
+  public constructor(traitAccessor: TraitAccessor<T>,  parameters: T[])
+  {
+    super(traitAccessor, parameters);
+  }
+
+  public getRank(element: Element): number
+  {
+    return this.get(this.traitAccessor(element)) ?? Number.MAX_SAFE_INTEGER;
+  }
+
+  public setParameters(parameters: T[])
+  {
+    for (const parameter of parameters)
+    {
+      this.set(parameter, this.size);
+    }
+  }
+}
+
 function compareElements(element1: Element, element2: Element, isMultiline: boolean = true): number
 {
-  for (const [name, comparator] of comparisons)
+  for (const [, comparator] of comparisons)
   {
     if (!isMultiline && comparator.ignoreWhenSingleLine)
     {
@@ -139,7 +239,7 @@ function getName(node: Node): string
   }
   if (node instanceof ImportDeclaration)
   {
-    return node.getModuleSpecifier().getText();
+    return node.getModuleSpecifier().getText().slice(1, -1);
   }
   if (node instanceof TypeAliasDeclaration)
   {
@@ -358,108 +458,6 @@ function toEnumerationValues<T>(enumeration: object, values: string[]): T[]
     result.push(enumeration[value]);
   }
   return result;
-}
-
-class Element
-{
-  public headerness: Headerness = undefinedHeaderness;
-  public exportness: Exportness = undefinedExportness;
-  public importness: Importness = undefinedImportness;
-  public kind: SyntaxKind = undefinedKind;
-  public persistance: Persistance = undefinedPersistance;
-  public name: string = emptyString;
-  public text: string = emptyString;
-
-  public constructor(headerness: Headerness, importness: Importness, kind: SyntaxKind, exportness: Exportness, persistance: Persistance, name: string, text: string)
-  {
-    this.headerness = headerness;
-    this.importness = importness;
-    this.kind = kind;
-    this.exportness = exportness;
-    this.persistance = persistance;
-    this.name = name;
-    this.text = text;
-  }
-}
-
-abstract class MappedSortOrder<K, P> extends Map<K, number> implements SortOrder
-{
-  protected readonly traitAccessor: TraitAccessor<P>
-
-  public constructor(traitAccessor: TraitAccessor<P>,  parameters: P[])
-  {
-    super();
-    this.traitAccessor = traitAccessor;
-    this.setParameters(parameters);
-  }
-
-  public compare(element1: Element, element2: Element): number
-  {
-    const rank1 = this.getRank(element1) ?? Number.MAX_SAFE_INTEGER;
-    const rank2 = this.getRank(element2) ?? Number.MAX_SAFE_INTEGER;
-    return rank1 === rank2 ? 0 : rank1 < rank2 ? -1 : 1;
-  }
-
-  abstract getRank(element: Element);
-  abstract setParameters(parameters: P[]);
-}
-
-class NameSortOrder implements SortOrder
-{
-  public compare(element1: Element, element2: Element): number
-  {
-    return element1.name.localeCompare(element2.name);
-  }
-}
-
-class RegularExpressionSortOrder extends MappedSortOrder<RegExp, string>
-{
-  public constructor(traitAccessor: TraitAccessor<string>,  parameters: string[])
-  {
-    super(traitAccessor, parameters);
-  }
-
-  public getRank(element: Element): number
-  {
-    const key = this.traitAccessor(element);
-    for (const [regex, rank] of this)
-    {
-      if (regex !== undefined && regex.test(key))
-      {
-        return rank;
-      }
-    }
-    return this.get(undefinedRegex) ?? Number.MAX_SAFE_INTEGER;
-  }
-
-  public setParameters(parameters: string[])
-  {
-    for (const parameter of parameters)
-    {
-      this.set(parameter === undefined ? undefinedRegex : new RegExp(parameter), this.size);
-    }
-  }
-}
-
-class TraitSortOrder<T> extends MappedSortOrder<T, T>
-{
-  public constructor(traitAccessor: TraitAccessor<T>,  parameters: T[])
-  {
-    super(traitAccessor, parameters);
-  }
-
-  public getRank(element: Element): number
-  {
-    return this.get(this.traitAccessor(element)) ?? Number.MAX_SAFE_INTEGER;
-  }
-
-  public setParameters(parameters: T[])
-  {
-    for (const parameter of parameters)
-    {
-      this.set(parameter, this.size);
-    }
-  }
 }
 
 main();
