@@ -24,7 +24,7 @@ enum Persistance
   IsConstant
 }
 
-type Comparator = { (element1: Element, element2: Element): number; ignoreWhenSingleLine: boolean };
+type Comparator = { (element1: Element, element2: Element): number; comparatorName: string; ignoreWhenSingleLine: boolean };
 type TraitAccessor<T> = (element: Element) => T;
 
 interface SortOrder
@@ -39,7 +39,7 @@ const comparatorNameKind = "kind";
 const comparatorNameName = "name";
 const comparatorNamePersistance = "persistance";
 const comparatorNameRegularExpression ="regularExpression";
-const comparisons = new Array<[string, Comparator]>();
+const comparisons: Comparator[] = [];
 const emptyString = "" as string;
 const undefinedExportness = undefined as Exportness;
 const undefinedHeaderness = undefined as Headerness;
@@ -152,7 +152,7 @@ class TraitSortOrder<T> extends MappedSortOrder<T, T>
 
 function compareElements(element1: Element, element2: Element, isMultiline: boolean = true): number
 {
-  for (const [, comparator] of comparisons)
+  for (const comparator of comparisons)
   {
     if (!isMultiline && comparator.ignoreWhenSingleLine)
     {
@@ -185,12 +185,13 @@ function getCommentGapIndex(node: Node): number
   return 0;
 }
 
-function getComparator(sortOrder: SortOrder, ignoreWhenSingleLine: boolean): Comparator
+function getComparator(sortOrder: SortOrder, name: string, ignoreWhenSingleLine: boolean): Comparator
 {
-  const result = <Comparator> function (element1: Element, element2: Element): number
+  let result = <Comparator> function (element1: Element, element2: Element): number
   {
     return sortOrder.compare(element1, element2);
   }
+  result.comparatorName = name;
   result.ignoreWhenSingleLine = ignoreWhenSingleLine;
   return result;
 }
@@ -281,9 +282,13 @@ async function handleFile(configPath: string, sourcePath: string): Promise<strin
   }
   elements.sort((element1, element2) => compareElements(element1, element2))
   let result = "";
-  let previousElement = undefined;
+  let previousElement: Element;
   for (const element of elements)
   {
+    if (previousElement !== undefined && previousElement.name.includes("comparison"))
+    {
+      let a = 0;
+    }
     if (previousElement !== undefined && compareElements(element, previousElement, isMultiline(element)) !== 0)
     {
       result += "\n";
@@ -395,31 +400,31 @@ function readConfiguration(configuration: object)
     let traitValues;
     if ((traitValues = entry[comparatorNameHeaderness]) !== undefined)
     {
-      comparisons.push([comparatorNameHeaderness, getComparator(new TraitSortOrder(element => element.headerness, toEnumerationValues<Headerness>(Headerness, traitValues)), ignoreWhenSingleLine)]);
+      comparisons.push(getComparator(new TraitSortOrder(element => element.headerness, toEnumerationValues<Headerness>(Headerness, traitValues)), comparatorNameHeaderness, ignoreWhenSingleLine));
     }
     else if ((traitValues = entry[comparatorNameImportness]) !== undefined)
     {
-      comparisons.push([comparatorNameImportness, getComparator(new TraitSortOrder(element => element.importness, toEnumerationValues<Importness>(Importness, traitValues)), ignoreWhenSingleLine)]);
+      comparisons.push(getComparator(new TraitSortOrder(element => element.importness, toEnumerationValues<Importness>(Importness, traitValues)), comparatorNameImportness, ignoreWhenSingleLine));
     }
     else if ((traitValues = entry[comparatorNameKind]) !== undefined)
     {
-      comparisons.push([comparatorNameKind, getComparator(new TraitSortOrder(element => element.kind, toEnumerationValues<SyntaxKind>(SyntaxKind, traitValues)), ignoreWhenSingleLine)]);
+      comparisons.push(getComparator(new TraitSortOrder(element => element.kind, toEnumerationValues<SyntaxKind>(SyntaxKind, traitValues)), comparatorNameKind, ignoreWhenSingleLine));
     }
     else if ((traitValues = entry[comparatorNameExportness]) !== undefined)
     {
-      comparisons.push([comparatorNameExportness, getComparator(new TraitSortOrder(element => element.exportness, toEnumerationValues<Exportness>(Exportness, traitValues)), ignoreWhenSingleLine)]);
+      comparisons.push(getComparator(new TraitSortOrder(element => element.exportness, toEnumerationValues<Exportness>(Exportness, traitValues)), comparatorNameExportness, ignoreWhenSingleLine));
     }
     else if ((traitValues = entry[comparatorNamePersistance]) !== undefined)
     {
-      comparisons.push([comparatorNamePersistance, getComparator(new TraitSortOrder(element => element.persistance, toEnumerationValues<Persistance>(Persistance, traitValues)), ignoreWhenSingleLine)]);
+      comparisons.push(getComparator(new TraitSortOrder(element => element.persistance, toEnumerationValues<Persistance>(Persistance, traitValues)), comparatorNamePersistance, ignoreWhenSingleLine));
     }
     else if ((traitValues = entry[comparatorNameRegularExpression]) !== undefined)
     {
-      comparisons.push([comparatorNameRegularExpression, getComparator(new RegularExpressionSortOrder(element => element.text, traitValues), ignoreWhenSingleLine)]);
+      comparisons.push(getComparator(new RegularExpressionSortOrder(element => element.text, traitValues), comparatorNameRegularExpression, ignoreWhenSingleLine));
     }
     else if ((traitValues = entry[comparatorNameName]) !== undefined)
     {
-      comparisons.push([comparatorNameName, getComparator(new NameSortOrder(), ignoreWhenSingleLine)]);
+      comparisons.push(getComparator(new NameSortOrder(), comparatorNameName, ignoreWhenSingleLine));
     }
   }
 }

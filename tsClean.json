@@ -5,7 +5,7 @@
     { "kind": ["EnumDeclaration", "TypeAliasDeclaration", "InterfaceDeclaration", "VariableStatement", "ClassDeclaration", "FunctionDeclaration", null] },
     { "exportness": ["IsExported", null] },
     { "persistance": ["IsConstant", null] },
-    { "regularExpression": [null, "^.*\\[.*\\] += +.*;$"] },
+    { "regularExpression": [null, "^.*\\[.*\\] += +.*\\(.*\\);$"] },
     { "name": [], "ignoreWhenSingleLine": true }
   ]
 }
