@@ -7,20 +7,17 @@ import * as path from "path";
 import * as readline from "readline";
 import { ClassDeclaration, CommentStatement, EnumDeclaration, FunctionDeclaration, ImportDeclaration, Node, Project, SyntaxKind, TypeAliasDeclaration, VariableStatement, InterfaceDeclaration, VariableDeclarationKind } from 'ts-morph'
 
-enum Exportness
+enum Kind
 {
-  IsExported
-}
-
-enum Headerness
-{
-  IsHeader
-}
-
-enum Importness
-{
-  IsImport,
-  IsTypeImport
+  Enumeration,
+  Type,
+  Interface,
+  Variable,
+  Class,
+  Function,
+  Header,
+  Import,
+  TypeImport
 }
 
 enum Persistance
@@ -28,7 +25,12 @@ enum Persistance
   IsConstant
 }
 
-type Comparator = { (element1: Element, element2: Element): number; comparatorName: string; ignoreWhenSingleLine: boolean };
+enum Transfer
+{
+  IsExported
+}
+
+type Comparator = { (element1: Element, element2: Element): number; comparatorName: string; ignoreIfSingleLine: boolean };
 type TraitAccessor<T> = (element: Element) => T;
 
 interface SortOrder
@@ -36,38 +38,30 @@ interface SortOrder
   compare(element1: Element, element2: Element): number;
 }
 
-const comparatorNameExportness = "exportness";
-const comparatorNameHeaderness = "headerness";
-const comparatorNameImportness = "importness";
 const comparatorNameKind = "kind";
 const comparatorNameName = "name";
+const comparatorNamePattern ="pattern";
 const comparatorNamePersistance = "persistance";
-const comparatorNameRegularExpression ="regularExpression";
+const comparatorNameTransfer = "transfer";
 const comparisons: Comparator[] = [];
 const emptyString = "" as string;
-const undefinedExportness = undefined as Exportness;
-const undefinedHeaderness = undefined as Headerness;
-const undefinedImportness = undefined as Importness;
-const undefinedKind = undefined as SyntaxKind;
+const undefinedKind = undefined as Kind;
 const undefinedPersistance = undefined as Persistance;
 const undefinedRegex = undefined as RegExp;
+const undefinedTransfer = undefined as Transfer;
 
 class Element
 {
-  public headerness: Headerness = undefinedHeaderness;
-  public exportness: Exportness = undefinedExportness;
-  public importness: Importness = undefinedImportness;
-  public kind: SyntaxKind = undefinedKind;
+  public transfer: Transfer = undefinedTransfer;
+  public kind: Kind = undefinedKind;
   public persistance: Persistance = undefinedPersistance;
   public name: string = emptyString;
   public text: string = emptyString;
 
-  public constructor(headerness: Headerness, importness: Importness, kind: SyntaxKind, exportness: Exportness, persistance: Persistance, name: string, text: string)
+  public constructor(kind: Kind, transfer: Transfer, persistance: Persistance, name: string, text: string)
   {
-    this.headerness = headerness;
-    this.importness = importness;
     this.kind = kind;
-    this.exportness = exportness;
+    this.transfer = transfer;
     this.persistance = persistance;
     this.name = name;
     this.text = text;
@@ -104,7 +98,7 @@ class NameSortOrder implements SortOrder
   }
 }
 
-class RegularExpressionSortOrder extends MappedSortOrder<RegExp, string>
+class PatternSortOrder extends MappedSortOrder<RegExp, string>
 {
   public constructor(traitAccessor: TraitAccessor<string>,  parameters: string[])
   {
@@ -158,7 +152,7 @@ function compareElements(element1: Element, element2: Element, isMultiline: bool
 {
   for (const comparator of comparisons)
   {
-    if (!isMultiline && comparator.ignoreWhenSingleLine)
+    if (!isMultiline && comparator.ignoreIfSingleLine)
     {
       continue;
     }
@@ -189,14 +183,14 @@ function getCommentGapIndex(node: Node): number
   return 0;
 }
 
-function getComparator(sortOrder: SortOrder, name: string, ignoreWhenSingleLine: boolean): Comparator
+function getComparator(sortOrder: SortOrder, name: string, ignoreIfSingleLine: boolean): Comparator
 {
   let result = <Comparator> function (element1: Element, element2: Element): number
   {
     return sortOrder.compare(element1, element2);
   }
   result.comparatorName = name;
-  result.ignoreWhenSingleLine = ignoreWhenSingleLine;
+  result.ignoreIfSingleLine = ignoreIfSingleLine;
   return result;
 }
 
@@ -208,28 +202,36 @@ function* getElements(nodes: Iterable<Node>): IterableIterator<Element>
     const [header, rest] = splitToHeaderAndRest(node, isFirstNode);
     if (0 < header.length)
     {
-      yield new Element(Headerness.IsHeader, undefinedImportness, undefinedKind, undefinedExportness, undefinedPersistance, "", header);
+      yield new Element(Kind.Header, undefinedTransfer, undefinedPersistance, "", header);
     }
     if (0 < rest.length)
     {
-      yield new Element(undefinedHeaderness, getImportness(node), node.getKind(), getExportness(node), getPersistance(node), getName(node), rest);
+      yield new Element(getKind(node), getTransfer(node), getPersistance(node), getName(node), rest);
     }
     isFirstNode = false;
   }
 }
 
-function getExportness(node: Node): Exportness
+function getKind(node: Node): Kind
 {
-  return hasChildOfKind(node, SyntaxKind.ExportKeyword) ? Exportness.IsExported : undefinedExportness;
-}
-
-function getImportness(node: Node): Importness
-{
-  if (node instanceof ImportDeclaration)
+  switch (node.getKind())
   {
-    return hasDescendantOfKind(node, SyntaxKind.TypeKeyword) ? Importness.IsTypeImport : Importness.IsImport;
+    case SyntaxKind.EnumDeclaration:
+      return Kind.Enumeration;
+    case SyntaxKind.TypeAliasDeclaration:
+      return Kind.Type;
+    case SyntaxKind.InterfaceDeclaration:
+      return Kind.Interface;
+    case SyntaxKind.VariableStatement:
+      return Kind.Variable;
+    case SyntaxKind.ClassDeclaration:
+      return Kind.Class;
+    case SyntaxKind.FunctionDeclaration:
+      return Kind.Function;
+    case SyntaxKind.ImportDeclaration:
+      return hasDescendantOfKind(node, SyntaxKind.TypeKeyword) ? Kind.TypeImport : Kind.Import;
   }
-  return undefinedImportness;
+  return undefinedKind;
 }
 
 function getName(node: Node): string
@@ -274,6 +276,11 @@ function getPersistance(node: Node): Persistance
   return node instanceof VariableStatement && node.getDeclarationKind() === VariableDeclarationKind.Const ? Persistance.IsConstant : undefinedPersistance;
 }
 
+function getTransfer(node: Node): Transfer
+{
+  return hasChildOfKind(node, SyntaxKind.ExportKeyword) ? Transfer.IsExported : undefinedTransfer;
+}
+
 async function handleFile(configPath: string, sourcePath: string): Promise<string>
 {
   const project = new Project({ tsConfigFilePath: configPath });
@@ -289,10 +296,6 @@ async function handleFile(configPath: string, sourcePath: string): Promise<strin
   let previousElement: Element;
   for (const element of elements)
   {
-    if (previousElement !== undefined && previousElement.name.includes("comparison"))
-    {
-      let a = 0;
-    }
     if (previousElement !== undefined && compareElements(element, previousElement, isMultiline(element)) !== 0)
     {
       result += "\n";
@@ -411,35 +414,27 @@ function readConfiguration(configuration: object)
   assert(configurationComparisons !== undefined, 'property "comparisons" missing in configuration');
   for (const entry of configurationComparisons)
   {
-    const ignoreWhenSingleLine = entry["ignoreWhenSingleLine"] ?? false;
+    const ignoreIfSingleLine = entry["ignoreIfSingleLine"] ?? false;
     let traitValues;
-    if ((traitValues = entry[comparatorNameHeaderness]) !== undefined)
+    if ((traitValues = entry[comparatorNameKind]) !== undefined)
     {
-      comparisons.push(getComparator(new TraitSortOrder(element => element.headerness, toEnumerationValues<Headerness>(Headerness, traitValues)), comparatorNameHeaderness, ignoreWhenSingleLine));
+      comparisons.push(getComparator(new TraitSortOrder(element => element.kind, toEnumerationValues<Kind>(Kind, traitValues)), comparatorNameKind, ignoreIfSingleLine));
     }
-    else if ((traitValues = entry[comparatorNameImportness]) !== undefined)
+    else if ((traitValues = entry[comparatorNameTransfer]) !== undefined)
     {
-      comparisons.push(getComparator(new TraitSortOrder(element => element.importness, toEnumerationValues<Importness>(Importness, traitValues)), comparatorNameImportness, ignoreWhenSingleLine));
-    }
-    else if ((traitValues = entry[comparatorNameKind]) !== undefined)
-    {
-      comparisons.push(getComparator(new TraitSortOrder(element => element.kind, toEnumerationValues<SyntaxKind>(SyntaxKind, traitValues)), comparatorNameKind, ignoreWhenSingleLine));
-    }
-    else if ((traitValues = entry[comparatorNameExportness]) !== undefined)
-    {
-      comparisons.push(getComparator(new TraitSortOrder(element => element.exportness, toEnumerationValues<Exportness>(Exportness, traitValues)), comparatorNameExportness, ignoreWhenSingleLine));
+      comparisons.push(getComparator(new TraitSortOrder(element => element.transfer, toEnumerationValues<Transfer>(Transfer, traitValues)), comparatorNameTransfer, ignoreIfSingleLine));
     }
     else if ((traitValues = entry[comparatorNamePersistance]) !== undefined)
     {
-      comparisons.push(getComparator(new TraitSortOrder(element => element.persistance, toEnumerationValues<Persistance>(Persistance, traitValues)), comparatorNamePersistance, ignoreWhenSingleLine));
+      comparisons.push(getComparator(new TraitSortOrder(element => element.persistance, toEnumerationValues<Persistance>(Persistance, traitValues)), comparatorNamePersistance, ignoreIfSingleLine));
     }
-    else if ((traitValues = entry[comparatorNameRegularExpression]) !== undefined)
+    else if ((traitValues = entry[comparatorNamePattern]) !== undefined)
     {
-      comparisons.push(getComparator(new RegularExpressionSortOrder(element => element.text, traitValues), comparatorNameRegularExpression, ignoreWhenSingleLine));
+      comparisons.push(getComparator(new PatternSortOrder(element => element.text, traitValues), comparatorNamePattern, ignoreIfSingleLine));
     }
     else if ((traitValues = entry[comparatorNameName]) !== undefined)
     {
-      comparisons.push(getComparator(new NameSortOrder(), comparatorNameName, ignoreWhenSingleLine));
+      comparisons.push(getComparator(new NameSortOrder(), comparatorNameName, ignoreIfSingleLine));
     }
   }
 }

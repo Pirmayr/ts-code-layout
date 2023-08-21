@@ -1,11 +1,9 @@
 {
   "comparisons": [
-    { "headerness": ["IsHeader", null] },
-    { "importness": ["IsImport", "IsTypeImport", null] },
-    { "kind": ["EnumDeclaration", "TypeAliasDeclaration", "InterfaceDeclaration", "VariableStatement", "ClassDeclaration", "FunctionDeclaration", null] },
-    { "exportness": ["IsExported", null] },
+    { "kind": ["Header", "Import", "TypeImport", "Enumeration", "Type", "Interface", "Variable", "Class", "Function", null] },
+    { "transfer": ["IsExported", null] },
     { "persistance": ["IsConstant", null] },
-    { "regularExpression": [null, "^.*\\[.*\\] += +.*\\(.*\\);$"] },
-    { "name": [], "ignoreWhenSingleLine": true }
+    { "pattern": [null, "^.*\\[.*\\] += +.*\\(.*\\);$"] },
+    { "name": [], "ignoreIfSingleLine": true }
   ]
 }
