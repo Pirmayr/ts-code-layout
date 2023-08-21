@@ -1,2 +1,2 @@
-svn commit -m "%1"
+svn commit -m %1
 npm publish
