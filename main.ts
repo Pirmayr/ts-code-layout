@@ -1,11 +1,13 @@
 #! /usr/bin/env node
 // -*- js -*-
 
+import commandLineArgs from "command-line-args";
+import commandLineUsage from "command-line-usage";
 import * as fs from "fs";
-import { strict as assert } from 'node:assert';
+import { strict as assert } from "node:assert";
 import * as path from "path";
 import * as readline from "readline";
-import { ClassDeclaration, CommentStatement, EnumDeclaration, FunctionDeclaration, ImportDeclaration, Node, Project, SyntaxKind, TypeAliasDeclaration, VariableStatement, InterfaceDeclaration, VariableDeclarationKind } from 'ts-morph'
+import { ClassDeclaration, CommentStatement, EnumDeclaration, FunctionDeclaration, ImportDeclaration, Node, Project, SyntaxKind, TypeAliasDeclaration, VariableStatement, InterfaceDeclaration, VariableDeclarationKind } from "ts-morph"
 
 enum Kind
 {
@@ -37,6 +39,24 @@ interface SortOrder
 {
   compare(element1: Element, element2: Element): number;
 }
+
+const optionInputDirectory = "input-directory";
+const optionOutputDirectory = "output-directory";
+const optionScripts = "scripts";
+
+const optionsDefinition = 
+[
+  { name: optionInputDirectory, alias: "i", type: String, description: "input directory to read scripts from" },
+  { name: optionOutputDirectory, alias: "o", type: String, description: "output directory to write scripts to" },
+  { name: optionScripts, alias: "s", type: String, multiple: true, defaultOption: true, description: "scripts to be processed" }
+];
+
+const usageDefinition = 
+[
+	{ header: "Name", content: "ts-code-layout", raw: true },
+	{ header: "Description", content: "Rearranges code elements in typescript source code." },
+	{ header: "Options", optionList: optionsDefinition }
+];
 
 const comparatorNameKind = "kind";
 const comparatorNameName = "name";
@@ -148,11 +168,11 @@ class TraitSortOrder<T> extends MappedSortOrder<T, T>
   }
 }
 
-function compareElements(element1: Element, element2: Element, isMultiline: boolean = true): number
+function compareElements(element1: Element, element2: Element): number
 {
   for (const comparator of comparisons)
   {
-    if (!isMultiline && comparator.ignoreIfSingleLine)
+    if (comparator.ignoreIfSingleLine)
     {
       continue;
     }
@@ -285,7 +305,6 @@ async function handleFile(configPath: string, sourcePath: string): Promise<strin
 {
   const project = new Project({ tsConfigFilePath: configPath });
   const source = project.getSourceFile(sourcePath);
-
   const elements: Element[] = [];
   for (const element of getElements(source.forEachChildAsArray()))
   {
@@ -293,15 +312,21 @@ async function handleFile(configPath: string, sourcePath: string): Promise<strin
   }
   elements.sort((element1, element2) => compareElements(element1, element2))
   let result = "";
+  let previousIsMultiline = false;
   let previousElement: Element;
+  let isFirstElement = true;
   for (const element of elements)
   {
-    if (previousElement !== undefined && compareElements(element, previousElement, isMultiline(element)) !== 0)
+    const currentIsMultiline = isMultiline(element);
+    const needsBlankLine = previousElement !== undefined && compareElements(element, previousElement) !== 0;
+    if (!isFirstElement && (needsBlankLine || currentIsMultiline || previousIsMultiline))
     {
       result += "\n";
     }
     result += element.text.trim() + "\n";
+    previousIsMultiline = currentIsMultiline;
     previousElement = element;
+    isFirstElement = false;
   }
   return result;
 }
@@ -340,26 +365,14 @@ async function main()
   try
   {
     const commandLineArguments = process.argv;
-    let inputBaseDirectory = "";
-    let outputBaseDirectory = "";
-    if (2 <= commandLineArguments.length)
-    {
-      inputBaseDirectory = commandLineArguments[2] + "/";
-      if (!fs.existsSync(inputBaseDirectory))
-      {
-        console.log(`input directory "${inputBaseDirectory}" done not exist`);
-        return;
-      }
-    }
-    if (3 <= commandLineArguments.length)
-    {
-      outputBaseDirectory = commandLineArguments[3] + "/";
-      if (!fs.existsSync(outputBaseDirectory))
-      {
-        console.log(`output directory "${outputBaseDirectory}" done not exist`);
-        return;
-      }
-    }
+    const options = commandLineArgs(optionsDefinition);
+    const inputBaseDirectory = options[optionInputDirectory];
+    assert(inputBaseDirectory !== undefined, `missing option '${optionInputDirectory}'`);
+    assert(fs.existsSync(inputBaseDirectory), `input-directory ${inputBaseDirectory} does not exist`);
+    const outputBaseDirectory = options[optionOutputDirectory];
+    assert(outputBaseDirectory !== undefined, `missing option '${optionOutputDirectory}'`);
+    assert(fs.existsSync(outputBaseDirectory), `output-directory ${outputBaseDirectory} does not exist`);
+    const scripts = options[optionScripts];
     const currentDirectory = process.cwd();
     let configurationPath = path.normalize(currentDirectory + "/ts-code-layout.json");
     if (!fs.existsSync(configurationPath))
@@ -368,29 +381,28 @@ async function main()
       const programDirectory = path.dirname(scriptPath);
       configurationPath = path.normalize(programDirectory + "/ts-code-layout.json");
     }
+    assert(fs.existsSync(configurationPath), `could not find configuration-path '${configurationPath}'`);
     let config = JSON.parse(fs.readFileSync(configurationPath, "utf8"));
     readConfiguration(config);
-    const configPath = inputBaseDirectory + "tsconfig.json";
-    for (let i = 4; i < commandLineArguments.length; ++i)
+    const tsConfigPath = path.normalize(inputBaseDirectory + "/tsconfig.json");
+    for (let i = 0; i < scripts.length; ++i)
     {
-      const inputPath = path.normalize(inputBaseDirectory + commandLineArguments[i]);
-      if (!fs.existsSync(inputPath))
-      {
-        console.log(`input path "${inputPath}" done not exist`);
-        return;
-      }
-      const outputPath = path.normalize(outputBaseDirectory + commandLineArguments[i]);
+      const scriptFilename = scripts[i];
+      const inputPath = path.normalize(inputBaseDirectory + "/" + scriptFilename);
+      assert(fs.existsSync(inputPath), `could not find input-path '${inputPath}'`);
+      const outputPath = path.normalize(outputBaseDirectory + "/" + scriptFilename);
       if (fs.existsSync(outputPath))
       {
         fs.copyFileSync(outputPath, outputPath + ".backup");
       }
       console.log(inputPath + " => " + outputPath);
-      fs.writeFileSync(outputPath, await handleFile(configPath, inputPath));
+      fs.writeFileSync(outputPath, await handleFile(tsConfigPath, inputPath));
     }
   }
   catch (error)
   {
     console.log("error: " + error.message);
+    console.log(commandLineUsage(usageDefinition));
   }
   await prompt("end of program");
 }
@@ -411,7 +423,7 @@ function prompt(message: string): Promise<string>
 function readConfiguration(configuration: object)
 {
   const configurationComparisons = configuration["comparisons"]; 
-  assert(configurationComparisons !== undefined, 'property "comparisons" missing in configuration');
+  assert(configurationComparisons !== undefined, "property 'comparisons' missing in configuration");
   for (const entry of configurationComparisons)
   {
     const ignoreIfSingleLine = entry["ignoreIfSingleLine"] ?? false;

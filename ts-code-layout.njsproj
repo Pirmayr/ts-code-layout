@@ -4,7 +4,7 @@
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
     <Name>ts-code-layout</Name>
     <RootNamespace>NodejsConsoleApp1</RootNamespace>
-    <ScriptArguments>$(MSBuildProjectDirectory) c:\usr main.ts</ScriptArguments>
+    <ScriptArguments>-i $(MSBuildProjectDirectory) -o $(MSBuildProjectDirectory) main.ts</ScriptArguments>
     <SaveNodeJsSettingsInProjectFile>True</SaveNodeJsSettingsInProjectFile>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />

@@ -3,7 +3,7 @@
     { "kind": ["Header", "Import", "TypeImport", "Enumeration", "Type", "Interface", "Variable", "Class", "Function", null] },
     { "transfer": ["IsExported", null] },
     { "persistance": ["IsConstant", null] },
-    { "pattern": [null, "^.*\\[.*\\] += +.*\\(.*\\);$"] },
+    { "pattern": ["^const option.*Directory = .*;$", null], "ignoreIfSingleLine": true },
     { "name": [], "ignoreIfSingleLine": true }
   ]
 }
