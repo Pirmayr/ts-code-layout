@@ -1,5 +1,4 @@
 #! /usr/bin/env node
-// -*- js -*-
 
 import commandLineArgs from "command-line-args";
 import commandLineUsage from "command-line-usage";

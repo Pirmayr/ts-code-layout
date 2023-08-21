@@ -11,7 +11,21 @@ npm install ts-code-layout
 # Command Line
 
 ```
-npx ts-code-layout input-directory output-directory filenames ...
+npx ts-code-layout -i input-directory -o output-directory filenames ...
+
+Name
+
+ts-code-layout
+
+Description
+
+  Rearranges code elements in typescript source code.
+
+Options
+
+  -i, --input-directory string    input directory to read scripts from
+  -o, --output-directory string   output directory to write scripts to
+  -s, --scripts string[]          scripts to be processed
 ```
 
 ## Example
