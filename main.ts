@@ -357,9 +357,14 @@ async function main()
         return;
       }
     }
-    const scriptPath = commandLineArguments[1];
-    const programDirectory = path.dirname(scriptPath);
-    const configurationPath = path.normalize(programDirectory + "/ts-code-layout.json");
+    const currentDirectory = process.cwd();
+    let configurationPath = path.normalize(currentDirectory + "/ts-code-layout.json");
+    if (!fs.existsSync(configurationPath))
+    {
+      const scriptPath = commandLineArguments[1];
+      const programDirectory = path.dirname(scriptPath);
+      configurationPath = path.normalize(programDirectory + "/ts-code-layout.json");
+    }
     let config = JSON.parse(fs.readFileSync(configurationPath, "utf8"));
     readConfiguration(config);
     const configPath = inputBaseDirectory + "tsconfig.json";
@@ -372,6 +377,10 @@ async function main()
         return;
       }
       const outputPath = path.normalize(outputBaseDirectory + commandLineArguments[i]);
+      if (fs.existsSync(outputPath))
+      {
+        fs.copyFileSync(outputPath, outputPath + ".backup");
+      }
       console.log(inputPath + " => " + outputPath);
       fs.writeFileSync(outputPath, await handleFile(configPath, inputPath));
     }
