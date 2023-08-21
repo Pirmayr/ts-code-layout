@@ -2,7 +2,7 @@
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">14.0</VisualStudioVersion>
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
-    <Name>tsClean</Name>
+    <Name>ts-code-layout</Name>
     <RootNamespace>NodejsConsoleApp1</RootNamespace>
     <ScriptArguments>$(MSBuildProjectDirectory) c:\usr main.ts</ScriptArguments>
     <SaveNodeJsSettingsInProjectFile>True</SaveNodeJsSettingsInProjectFile>
@@ -35,7 +35,7 @@
     <None Include="main.ts" />
     <Content Include="package.json" />
     <Content Include="README.md" />
-    <Content Include="tsClean.json" />
+    <Content Include="ts-code-layout.json" />
     <Content Include="tsconfig.json" />
   </ItemGroup>
   <Import Project="$(VSToolsPath)\Node.js Tools\Microsoft.NodejsToolsV2.targets" />

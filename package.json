@@ -1,16 +1,22 @@
 {
-  "name": "ts-clean",
-  "version": "0.0.0",
-  "description": "ts-clean",
+  "name": "ts-code-layout",
+  "version": "1.0.11",
+  "description": "Changes the layout of typescript files.",
   "main": "main.js",
   "type": "module",
   "author": {
     "name": ""
   },
+  "bin": {
+    "ts-code-layout": "main.js"
+  },
   "scripts": {
     "build": "tsc --build",
     "clean": "tsc --build --clean"
   },
+  "files": [
+    "ts-code-layout.json"
+  ],
   "devDependencies": {
     "@types/node": "^14.18.54",
     "@typescript-eslint/eslint-plugin": "^5.62.0",

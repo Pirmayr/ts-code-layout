@@ -1,5 +1,9 @@
+#! /usr/bin/env node
+// -*- js -*-
+
 import * as fs from "fs";
 import { strict as assert } from 'node:assert';
+import * as path from "path";
 import * as readline from "readline";
 import { ClassDeclaration, CommentStatement, EnumDeclaration, FunctionDeclaration, ImportDeclaration, Node, Project, SyntaxKind, TypeAliasDeclaration, VariableStatement, InterfaceDeclaration, VariableDeclarationKind } from 'ts-morph'
 
@@ -353,19 +357,21 @@ async function main()
         return;
       }
     }
-
-    let config = JSON.parse(fs.readFileSync("./tsClean.json", "utf8"));
+    const scriptPath = commandLineArguments[1];
+    const programDirectory = path.dirname(scriptPath);
+    const configurationPath = path.normalize(programDirectory + "/ts-code-layout.json");
+    let config = JSON.parse(fs.readFileSync(configurationPath, "utf8"));
     readConfiguration(config);
     const configPath = inputBaseDirectory + "tsconfig.json";
     for (let i = 4; i < commandLineArguments.length; ++i)
     {
-      const inputPath = inputBaseDirectory + commandLineArguments[i];
+      const inputPath = path.normalize(inputBaseDirectory + commandLineArguments[i]);
       if (!fs.existsSync(inputPath))
       {
         console.log(`input path "${inputPath}" done not exist`);
         return;
       }
-      const outputPath = outputBaseDirectory + commandLineArguments[i];
+      const outputPath = path.normalize(outputBaseDirectory + commandLineArguments[i]);
       console.log(inputPath + " => " + outputPath);
       fs.writeFileSync(outputPath, await handleFile(configPath, inputPath));
     }
@@ -440,7 +446,26 @@ function splitToHeaderAndRest(node: Node, split: boolean): [string, string]
     const commentGapIndex = getCommentGapIndex(node);
     for (let i = 0; i <= commentRangesLength; ++i)
     {
-      const text = (i === commentRangesLength ? node.getText().trim() : commentRanges[i].getText().trim());
+      const commentRange = commentRanges[i];
+      let text: string;
+      if (i === commentRangesLength)
+      {
+        text = node.getText();
+      }
+      else
+      {
+        if (i === 0)
+        {
+          const commentPos = node.getPos();
+          const commentEnd = commentRange.getEnd() - commentPos;
+          text = node.getFullText().substring(commentPos, commentEnd);
+        }
+        else
+        {
+          commentRanges[i].getText();
+        }
+      }
+      text = text.trim();
       if (i < commentGapIndex)
       {
         header += text + "\n";
