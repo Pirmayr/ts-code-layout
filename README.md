@@ -2,23 +2,29 @@
 
 Arranges the top-level elements of typescripts source code.
 
-#Command Line
+# Installation
+
+```
+npm install ts-code-layout
+```
+
+# Command Line
 
 ```
 npx ts-code-layout input-directory output-directory filenames ...
 ```
 
-Example
+## Example
 
 ```
 npx ts-code-layout c:/foo c:/bar script.ts
 ```
 
-#Configuration
+# Configuration
 
 The configuration is read from "ts-code-config.json". 
 
-Example
+## Example
 
 ```
 {
