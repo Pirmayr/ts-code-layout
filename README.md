@@ -56,8 +56,12 @@ The program uses the comparisons to determine the order of two code elements. Th
 
 Comparison Categories
 
-- "kind": The kind of the code element. Values: Header, Import, TypeImport, Enumeration, Type, Interface, Variable, Class, Function, and "null".
-- "transfer": Sorts the code elements by whether it is an import, a type import, or neither.
-- "persistance": The fact, wether a code element is constant or not. Value: IsConstant, and "null".
-- "name": The name of the code element.
-- "pattern": Regular expressions. Code elements, which match patterns, are sorted according to the order of the patterns. The value "null" is used for code element, which match none of the patterns.
+| Category    | Description                                                  | Values                                                       |
+| ----------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| kind        | The kind of source code element                              | Header, Import, TypeImport, Enumeration, Type, Interface, Variable, Class, Function, and "null" |
+| transfer    | Sorts the code elements by whether it is an import, a type import, or neither. | IsImport, IsExport, and "null"                               |
+| persistance | The fact, wether a code element is constant or not. Value: IsConstant, and "null". | IsConstant, and "null"                                       |
+| name        | The name of the code element.                                |                                                              |
+| pattern     | Regular expressions. Code elements, which match patterns, are sorted according to the order of the patterns. The value "null" is used for code element, which match none of the patterns. |                                                              |
+|             |                                                              |                                                              |
+

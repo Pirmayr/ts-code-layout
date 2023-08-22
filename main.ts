@@ -41,6 +41,13 @@ interface SortOrder
 
 const optionInputDirectory = "input-directory";
 const optionOutputDirectory = "output-directory";
+const comparatorNameKind = "kind";
+const comparatorNameName = "name";
+const comparatorNamePattern ="pattern";
+const comparatorNamePersistance = "persistance";
+const comparatorNameTransfer = "transfer";
+const comparisons: Comparator[] = [];
+const emptyString = "" as string;
 const optionScripts = "scripts";
 
 const optionsDefinition = 
@@ -50,24 +57,17 @@ const optionsDefinition =
   { name: optionScripts, alias: "s", type: String, multiple: true, defaultOption: true, description: "scripts to be processed" }
 ];
 
+const undefinedKind = undefined as Kind;
+const undefinedPersistance = undefined as Persistance;
+const undefinedRegex = undefined as RegExp;
+const undefinedTransfer = undefined as Transfer;
+
 const usageDefinition = 
 [
 	{ header: "Name", content: "ts-code-layout", raw: true },
 	{ header: "Description", content: "Rearranges code elements in typescript source code." },
 	{ header: "Options", optionList: optionsDefinition }
 ];
-
-const comparatorNameKind = "kind";
-const comparatorNameName = "name";
-const comparatorNamePattern ="pattern";
-const comparatorNamePersistance = "persistance";
-const comparatorNameTransfer = "transfer";
-const comparisons: Comparator[] = [];
-const emptyString = "" as string;
-const undefinedKind = undefined as Kind;
-const undefinedPersistance = undefined as Persistance;
-const undefinedRegex = undefined as RegExp;
-const undefinedTransfer = undefined as Transfer;
 
 class Element
 {
@@ -167,11 +167,11 @@ class TraitSortOrder<T> extends MappedSortOrder<T, T>
   }
 }
 
-function compareElements(element1: Element, element2: Element): number
+function compareElements(element1: Element, element2: Element, useIgnoreIfSingleLine = false): number
 {
   for (const comparator of comparisons)
   {
-    if (comparator.ignoreIfSingleLine)
+    if (useIgnoreIfSingleLine && comparator.ignoreIfSingleLine)
     {
       continue;
     }
@@ -317,7 +317,7 @@ async function handleFile(configPath: string, sourcePath: string): Promise<strin
   for (const element of elements)
   {
     const currentIsMultiline = isMultiline(element);
-    const needsBlankLine = previousElement !== undefined && compareElements(element, previousElement) !== 0;
+    const needsBlankLine = previousElement !== undefined && compareElements(element, previousElement, true) !== 0;
     if (!isFirstElement && (needsBlankLine || currentIsMultiline || previousIsMultiline))
     {
       result += "\n";
@@ -458,36 +458,53 @@ function splitToHeaderAndRest(node: Node, split: boolean): [string, string]
     let rest: string = "";
     const commentRanges = node.getLeadingCommentRanges();
     const commentRangesLength = commentRanges.length;
-    const commentGapIndex = getCommentGapIndex(node);
-    for (let i = 0; i <= commentRangesLength; ++i)
+    if (commentRangesLength === 0)
     {
-      const commentRange = commentRanges[i];
-      let text: string;
-      if (i === commentRangesLength)
+      const triviaWidth = node.getLeadingTriviaWidth();
+      if (0 < triviaWidth)
       {
-        text = node.getText();
+        const nodePos = node.getPos();
+        header = node.getFullText().substring(nodePos, nodePos + triviaWidth);
+        rest = node.getText();
       }
       else
       {
-        if (i === 0)
+        rest = node.getFullText();
+      }
+    }
+    else 
+    {
+      const commentGapIndex = getCommentGapIndex(node);
+      for (let i = 0; i <= commentRangesLength; ++i)
+      {
+        const commentRange = commentRanges[i];
+        let text: string;
+        if (i === commentRangesLength)
         {
-          const commentPos = node.getPos();
-          const commentEnd = commentRange.getEnd() - commentPos;
-          text = node.getFullText().substring(commentPos, commentEnd);
+          text = node.getText();
         }
         else
         {
-          commentRanges[i].getText();
+          if (i === 0)
+          {
+            const commentPos = node.getPos();
+            const commentEnd = commentRange.getEnd() - commentPos;
+            text = node.getFullText().substring(commentPos, commentEnd);
+          }
+          else
+          {
+            commentRanges[i].getText();
+          }
         }
-      }
-      text = text.trim();
-      if (i < commentGapIndex)
-      {
-        header += text + "\n";
-      }
-      else
-      {
-        rest += text + "\n";
+        text = text.trim();
+        if (i < commentGapIndex)
+        {
+          header += text + "\n";
+        }
+        else
+        {
+          rest += text + "\n";
+        }
       }
     }
     return [header.trim(), rest.trim()];

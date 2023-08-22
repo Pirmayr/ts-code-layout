@@ -1,8 +1,8 @@
 {
   "comparisons": [
     { "kind": ["Header", "Import", "TypeImport", "Enumeration", "Type", "Interface", "Variable", "Class", "Function", null] },
-    { "transfer": ["IsExported", null] },
-    { "persistance": ["IsConstant", null] },
+    { "transfer": [ "IsExported", null ] },
+    { "persistance": [ "IsConstant", null ] },
     { "pattern": ["^const option.*Directory = .*;$", null], "ignoreIfSingleLine": true },
     { "name": [], "ignoreIfSingleLine": true }
   ]
