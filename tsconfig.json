@@ -2,9 +2,10 @@
   "compilerOptions": {
     "module": "ESNext",
     "target": "ESNext",
-    "lib": ["ESNext"],
+    "lib": ["ESNext", "dom"],
     "sourceMap": true,
-    "moduleResolution": "NodeNext"
+    "moduleResolution": "NodeNext",
+    "allowSyntheticDefaultImports": true
   },
   "exclude": [
     "node_modules"

@@ -41,33 +41,56 @@ interface SortOrder
 
 const optionInputDirectory = "input-directory";
 const optionOutputDirectory = "output-directory";
+const optionPause = "pause";
+const optionScripts = "scripts";
+
+const configurationExample =
+  `\\{
+    "comparisons": [
+      \\{ "kind": ["Header", "Import", "TypeImport", "Enumeration", "Type", "Interface", "Variable", "Class", "Function", null] \\},
+      \\{ "transfer": [ "IsExported", null ] \\},
+      \\{ "persistance": [ "IsConstant", null ] \\},
+      \\{ "pattern": ["const option[a-zA-Z]+ = \"[-a-zA-z]+\";", null], "ignoreIfSingleLine": false \\},
+      \\{ "name": [], "ignoreIfSingleLine": true \\}
+    ]
+  \\}`;
+
 const comparatorNameKind = "kind";
 const comparatorNameName = "name";
 const comparatorNamePattern ="pattern";
 const comparatorNamePersistance = "persistance";
 const comparatorNameTransfer = "transfer";
 const comparisons: Comparator[] = [];
-const emptyString = "" as string;
-const optionScripts = "scripts";
 
-const optionsDefinition = 
-[
-  { name: optionInputDirectory, alias: "i", type: String, description: "input directory to read scripts from" },
-  { name: optionOutputDirectory, alias: "o", type: String, description: "output directory to write scripts to" },
-  { name: optionScripts, alias: "s", type: String, multiple: true, defaultOption: true, description: "scripts to be processed" }
-];
+const description = `
+  Rearranges code elements in the top level of typescript source code.
+  The layout is specified in "ts-code-layout.json". The file is searched
+  in the current directory. If not found, the default configuration in
+  the installation directory is used.`;
+
+const emptyString = "" as string;
+
+const optionsDefinition =
+  [
+    { name: optionInputDirectory, alias: "i", type: String, description: "Input-directory to read scripts from." },
+    { name: optionOutputDirectory, alias: "o", type: String, description: "Output-directory to write scripts to." },
+    { name: optionScripts, alias: "s", type: String, multiple: true, defaultOption: true, description: "Scripts to be processed." },
+    { name: optionPause, alias: "p", type: Boolean, description: "Pause before closing the app." }
+  ];
 
 const undefinedKind = undefined as Kind;
 const undefinedPersistance = undefined as Persistance;
 const undefinedRegex = undefined as RegExp;
 const undefinedTransfer = undefined as Transfer;
 
-const usageDefinition = 
-[
-	{ header: "Name", content: "ts-code-layout", raw: true },
-	{ header: "Description", content: "Rearranges code elements in typescript source code." },
-	{ header: "Options", optionList: optionsDefinition }
-];
+const usageDefinition =
+  [
+    { header: "Name", content: "ts-code-layout: Rearranges elements in typescript code." },
+    { header: "Synopsis", content: "ts-code-layout -i input-directory -o output-directory [-s] sources ..." },
+    { header: "Description", content: description },
+    { header: "Options", optionList: optionsDefinition },
+    { header: "Example Configuration ", content: "  " + configurationExample, raw: true }
+  ];
 
 class Element
 {
@@ -361,10 +384,12 @@ function isMultiline(element: Element): boolean
 
 async function main()
 {
+  let pause = false;
   try
   {
     const commandLineArguments = process.argv;
     const options = commandLineArgs(optionsDefinition);
+    pause = options[optionPause];
     const inputBaseDirectory = options[optionInputDirectory];
     assert(inputBaseDirectory !== undefined, `missing option '${optionInputDirectory}'`);
     assert(fs.existsSync(inputBaseDirectory), `input-directory ${inputBaseDirectory} does not exist`);
@@ -383,6 +408,7 @@ async function main()
     assert(fs.existsSync(configurationPath), `could not find configuration-path '${configurationPath}'`);
     let config = JSON.parse(fs.readFileSync(configurationPath, "utf8"));
     readConfiguration(config);
+    usageDefinition
     const tsConfigPath = path.normalize(inputBaseDirectory + "/tsconfig.json");
     for (let i = 0; i < scripts.length; ++i)
     {
@@ -401,9 +427,13 @@ async function main()
   catch (error)
   {
     console.log("error: " + error.message);
-    console.log(commandLineUsage(usageDefinition));
+    const usageAnsi = commandLineUsage(usageDefinition);
+    console.log(usageAnsi);
   }
-  await prompt("end of program");
+  if (pause)
+  {
+    await prompt("end of program");
+  }
 }
 
 function prompt(message: string): Promise<string>
