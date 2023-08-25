@@ -385,7 +385,7 @@ function isMultiline(element: Element): boolean
 async function main()
 {
   let pause = false;
-  try
+  // try
   {
     const commandLineArguments = process.argv;
     const options = commandLineArgs(optionsDefinition);
@@ -424,6 +424,7 @@ async function main()
       fs.writeFileSync(outputPath, await handleFile(tsConfigPath, inputPath));
     }
   }
+  /*
   catch (error)
   {
     console.log("error: " + error.message);
@@ -434,6 +435,7 @@ async function main()
   {
     await prompt("end of program");
   }
+  */
 }
 
 function prompt(message: string): Promise<string>
@@ -523,7 +525,7 @@ function splitToHeaderAndRest(node: Node, split: boolean): [string, string]
           }
           else
           {
-            commentRanges[i].getText();
+            text = commentRanges[i].getText();
           }
         }
         text = text.trim();
