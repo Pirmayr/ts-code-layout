@@ -43,6 +43,7 @@ const optionInputDirectory = "input-directory";
 const optionOutputDirectory = "output-directory";
 const optionPause = "pause";
 const optionScripts = "scripts";
+const matchAllRegex = new RegExp("");
 
 const configurationExample =
   `\\{
@@ -80,7 +81,6 @@ const optionsDefinition =
 
 const undefinedKind = undefined as Kind;
 const undefinedPersistance = undefined as Persistance;
-const undefinedRegex = undefined as RegExp;
 const undefinedTransfer = undefined as Transfer;
 
 const usageDefinition =
@@ -149,22 +149,27 @@ class PatternSortOrder extends MappedSortOrder<RegExp, string>
 
   public getRank(element: Element): number
   {
+    let matchAllRank = Number.MAX_SAFE_INTEGER;
     const key = this.traitAccessor(element);
     for (const [regex, rank] of this)
     {
-      if (regex !== undefined && regex.test(key))
+      if (regex === matchAllRegex)
+      {
+        matchAllRank = rank;
+      }
+      else if (regex.test(key))
       {
         return rank;
       }
     }
-    return this.get(undefinedRegex) ?? Number.MAX_SAFE_INTEGER;
+    return matchAllRank;
   }
 
   public setParameters(parameters: string[])
   {
     for (const parameter of parameters)
     {
-      this.set(parameter === undefined ? undefinedRegex : new RegExp(parameter), this.size);
+      this.set(parameter === null ? matchAllRegex : new RegExp(parameter), this.size);
     }
   }
 }
@@ -385,7 +390,7 @@ function isMultiline(element: Element): boolean
 async function main()
 {
   let pause = false;
-  // try
+  try
   {
     const commandLineArguments = process.argv;
     const options = commandLineArgs(optionsDefinition);
@@ -424,7 +429,6 @@ async function main()
       fs.writeFileSync(outputPath, await handleFile(tsConfigPath, inputPath));
     }
   }
-  /*
   catch (error)
   {
     console.log("error: " + error.message);
@@ -435,7 +439,6 @@ async function main()
   {
     await prompt("end of program");
   }
-  */
 }
 
 function prompt(message: string): Promise<string>
