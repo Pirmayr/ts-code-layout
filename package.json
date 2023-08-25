@@ -1,6 +1,6 @@
 {
   "name": "ts-code-layout",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": "Changes the layout of typescript files.",
   "main": "main.js",
   "type": "module",
@@ -15,7 +15,7 @@
     "ts-code-layout": "main.js"
   },
   "scripts": {
-    "build": "tsc --build",
+    "build": "build.bat",
     "clean": "tsc --build --clean"
   },
   "files": [
@@ -26,6 +26,7 @@
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
     "eslint": "^8.47.0",
+    "rexreplace": "^7.1.3",
     "typescript": "^4.9.5"
   },
   "eslintConfig": {

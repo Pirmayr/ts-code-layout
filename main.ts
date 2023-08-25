@@ -43,53 +43,33 @@ const optionInputDirectory = "input-directory";
 const optionOutputDirectory = "output-directory";
 const optionPause = "pause";
 const optionScripts = "scripts";
+const optionWriteOptions = "write-options";
 const matchAllRegex = new RegExp("");
-
-const configurationExample =
-  `\\{
-    "comparisons": [
-      \\{ "kind": ["Header", "Import", "TypeImport", "Enumeration", "Type", "Interface", "Variable", "Class", "Function", null] \\},
-      \\{ "transfer": [ "IsExported", null ] \\},
-      \\{ "persistance": [ "IsConstant", null ] \\},
-      \\{ "pattern": ["const option[a-zA-Z]+ = \"[-a-zA-z]+\";", null], "ignoreIfSingleLine": false \\},
-      \\{ "name": [], "ignoreIfSingleLine": true \\}
-    ]
-  \\}`;
-
 const comparatorNameKind = "kind";
 const comparatorNameName = "name";
 const comparatorNamePattern ="pattern";
 const comparatorNamePersistance = "persistance";
 const comparatorNameTransfer = "transfer";
 const comparisons: Comparator[] = [];
-
-const description = `
-  Rearranges code elements in the top level of typescript source code.
-  The layout is specified in "ts-code-layout.json". The file is searched
-  in the current directory. If not found, the default configuration in
-  the installation directory is used.`;
-
 const emptyString = "" as string;
 
 const optionsDefinition =
   [
-    { name: optionInputDirectory, alias: "i", type: String, description: "Input-directory to read scripts from." },
-    { name: optionOutputDirectory, alias: "o", type: String, description: "Output-directory to write scripts to." },
-    { name: optionScripts, alias: "s", type: String, multiple: true, defaultOption: true, description: "Scripts to be processed." },
-    { name: optionPause, alias: "p", type: Boolean, description: "Pause before closing the app." }
+    { name: optionInputDirectory, alias: "i", type: String, description: 'Input-directory to read scripts from.' },
+    { name: optionOutputDirectory, alias: "o", type: String, description: 'Output-directory to write scripts to.' },
+    { name: optionScripts, alias: "s", type: String, multiple: true, defaultOption: true, description: 'Scripts to be processed.' },
+    { name: optionPause, alias: "p", type: Boolean, description: 'Pause before closing the app.' },
+    { name: optionWriteOptions, alias: "w", type: Boolean, description: 'Writes options to "options.txt"' }
   ];
 
 const undefinedKind = undefined as Kind;
 const undefinedPersistance = undefined as Persistance;
 const undefinedTransfer = undefined as Transfer;
+const help = '$(HELP)';
 
 const usageDefinition =
   [
-    { header: "Name", content: "ts-code-layout: Rearranges elements in typescript code." },
-    { header: "Synopsis", content: "ts-code-layout -i input-directory -o output-directory [-s] sources ..." },
-    { header: "Description", content: description },
-    { header: "Options", optionList: optionsDefinition },
-    { header: "Example Configuration ", content: "  " + configurationExample, raw: true }
+    { header: "", optionList: optionsDefinition },
   ];
 
 class Element
@@ -395,6 +375,12 @@ async function main()
     const commandLineArguments = process.argv;
     const options = commandLineArgs(optionsDefinition);
     pause = options[optionPause];
+    const writeOptions = options[optionWriteOptions];
+    if (writeOptions)
+    {
+      fs.writeFileSync("options.txt", "  " + commandLineUsage(usageDefinition).trim());
+      return;
+    }
     const inputBaseDirectory = options[optionInputDirectory];
     assert(inputBaseDirectory !== undefined, `missing option '${optionInputDirectory}'`);
     assert(fs.existsSync(inputBaseDirectory), `input-directory ${inputBaseDirectory} does not exist`);
@@ -432,8 +418,7 @@ async function main()
   catch (error)
   {
     console.log("error: " + error.message);
-    const usageAnsi = commandLineUsage(usageDefinition);
-    console.log(usageAnsi);
+    console.log(help);
   }
   if (pause)
   {

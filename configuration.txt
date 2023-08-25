@@ -1,0 +1,19 @@
+The elements are sorted by following traits:
+
+  "kind": Based on the kind of element (enumeration, class, function, ...); 
+  Values: "Header", "Import", "TypeImport", "Enumeration", "Type", "Interface", "Variable", "Class", "Function"
+
+  "transfer": Based on whether elements are exported or not; 
+  Value: "IsExported"
+
+  "persistance": Based on whether elements are constant or not; 
+  Value: IsConstant
+
+  "pattern": Based on whether an element matches patterns or not;
+  Values: One or more regular expressions
+
+  "name": Based on the alphabetical sorting of the name of the element.
+
+When comparing the elements, the order in which the properties are specified 
+in the configuration is taken into account. A value of "null" means that the 
+values ??of the corresponding trait do not apply to the element.

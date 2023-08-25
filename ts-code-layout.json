@@ -1,9 +1,10 @@
 {
-  "comparisons": [
+  "comparisons": 
+  [
     { "kind": ["Header", "Import", "TypeImport", "Enumeration", "Type", "Interface", "Variable", "Class", "Function", null] },
     { "transfer": [ "IsExported", null ] },
     { "persistance": [ "IsConstant", null ] },
-    { "pattern": [null, ".*getAccessors.*"] },
+    { "pattern": ["const option[a-zA-Z]+ = \"[-a-zA-z]+\";", null], "ignoreIfSingleLine": false },
     { "name": [], "ignoreIfSingleLine": true }
   ]
 }

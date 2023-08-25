@@ -33,8 +33,10 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="main.ts" />
+    <Content Include="build.bat" />
+    <Content Include="configuration.txt" />
     <Content Include="package.json" />
-    <Content Include="README.md" />
+    <Content Include="README.template.md" />
     <Content Include="ts-code-layout.json" />
     <Content Include="tsconfig.json" />
   </ItemGroup>
