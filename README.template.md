@@ -29,30 +29,38 @@ $(OPTIONS)
 
 # Configuration
 
-  The elements are sorted by following traits:
+  The elements are sorted based on following traits:
 
-  * "kind": Based on the kind of element (enumeration, class, function, ...).
-  * "transfer": Based on whether elements are exported or not.
-  * "persistance": Based on whether elements are constant or not.
-  * "pattern": Based on whether an element matches patterns or not.
-  * "name": Based on the alphabetical sorting of the name of the element.
+  * "kind": The kind of the elements (enumeration, class, function, ...).
+  * "transfer": Whether elements are exported ("export").
+  * "persistance": Whether elements are constant ("const").
+  * "declaration": Whether elements are declared ("declare").
+  * "pattern": Whether elements matches patterns.
+  * "name": Alphabetically by the name of the element.
 
   Possible values:
 
   * "kind": "Header", "Import", "TypeImport", "Enumeration", "Type", "Interface", "Variable", "Class", "Function"
   * "transfer": "IsExported"
   * "persistance": "IsConstant"
+  * "declaration": "IsDeclared"
   * "pattern": One or more regular expressions
   * "name": -
 
-  In all traits (except "name") the value "null" can also be used. A value of "null" 
+  In all traits (except "name", which has no values) the value "null" can also be used. A value of "null" 
   means that the values of the corresponding trait do not apply to the element.
 
   When comparing the elements, the order in which the traits are specified
-  in the configuration is taken into account. 
+  in the configuration as well as the order of values in a trait is taken into account. 
 
 # Example
 
 ~~~
 $(EXAMPLE_CONFIGURATION)
 ~~~
+
+This configuration file happens to be the configuration file used for "ts-code-layout" itself.
+
+First, the code elements are ordered by their kind according to the order of the values defined. Then they are
+ordered by "transfer" and "persistance". As variables, with match the given pattern, have to come before any other
+variables, a corresponding rule is provided under "pattern". Finally the code elements are sorted alphabetically.

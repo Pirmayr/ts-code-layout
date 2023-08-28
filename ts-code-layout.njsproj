@@ -4,7 +4,7 @@
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
     <Name>ts-code-layout</Name>
     <RootNamespace>NodejsConsoleApp1</RootNamespace>
-    <ScriptArguments>-i C:\Development\Workspaces\Binaries\branches\B5340\moveIT.Graphics.Viewer -o c:\usr accessors.ts attributeAccessors.ts babylonTypes.ts decorators.ts globals.ts sequences.ts tests.ts tools.ts usage.ts viewer.ts viewerBase.ts</ScriptArguments>
+    <ScriptArguments>-i . -o . main.ts</ScriptArguments>
     <SaveNodeJsSettingsInProjectFile>True</SaveNodeJsSettingsInProjectFile>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />

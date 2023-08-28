@@ -8,6 +8,11 @@ import * as path from "path";
 import * as readline from "readline";
 import { ClassDeclaration, CommentStatement, EnumDeclaration, FunctionDeclaration, ImportDeclaration, Node, Project, SyntaxKind, TypeAliasDeclaration, VariableStatement, InterfaceDeclaration, VariableDeclarationKind } from "ts-morph"
 
+enum Declaration
+{
+  IsDeclared
+}
+
 enum Kind
 {
   Enumeration,
@@ -24,6 +29,16 @@ enum Kind
 enum Persistance
 {
   IsConstant
+}
+
+enum Trait
+{
+  Kind = "kind",
+  Name = "name",
+  Pattern = "pattern",
+  Persistance = "persistance",
+  Transfer = "transfer",
+  Declaration = "declare"
 }
 
 enum Transfer
@@ -44,7 +59,7 @@ const optionOutputDirectory = "output-directory";
 const optionPause = "pause";
 const optionScripts = "scripts";
 const optionWriteOptions = "write-options";
-const matchAllRegex = new RegExp("");
+
 const comparatorNameKind = "kind";
 const comparatorNameName = "name";
 const comparatorNamePattern ="pattern";
@@ -52,6 +67,8 @@ const comparatorNamePersistance = "persistance";
 const comparatorNameTransfer = "transfer";
 const comparisons: Comparator[] = [];
 const emptyString = "" as string;
+const help = '$(HELP)';
+const matchAllRegex = new RegExp("");
 
 const optionsDefinition =
   [
@@ -62,10 +79,10 @@ const optionsDefinition =
     { name: optionWriteOptions, alias: "w", type: Boolean, description: 'Writes options to "options.txt"' }
   ];
 
+const undefinedDeclaration = undefined as Declaration;
 const undefinedKind = undefined as Kind;
 const undefinedPersistance = undefined as Persistance;
 const undefinedTransfer = undefined as Transfer;
-const help = '$(HELP)';
 
 const usageDefinition =
   [
@@ -79,12 +96,14 @@ class Element
   public persistance: Persistance = undefinedPersistance;
   public name: string = emptyString;
   public text: string = emptyString;
+  public declaration: Declaration = undefinedDeclaration;
 
-  public constructor(kind: Kind, transfer: Transfer, persistance: Persistance, name: string, text: string)
+  public constructor(kind: Kind, transfer: Transfer, persistance: Persistance, declaration: Declaration, name: string, text: string)
   {
     this.kind = kind;
     this.transfer = transfer;
     this.persistance = persistance;
+    this.declaration = declaration;
     this.name = name;
     this.text = text;
   }
@@ -221,6 +240,11 @@ function getComparator(sortOrder: SortOrder, name: string, ignoreIfSingleLine: b
   return result;
 }
 
+function getDeclaration(node: Node): Declaration
+{
+  return hasChildOfKind(node, SyntaxKind.DeclareKeyword) ? Declaration.IsDeclared : undefinedDeclaration;
+}
+
 function* getElements(nodes: Iterable<Node>): IterableIterator<Element>
 {
   let isFirstNode = true;
@@ -229,11 +253,11 @@ function* getElements(nodes: Iterable<Node>): IterableIterator<Element>
     const [header, rest] = splitToHeaderAndRest(node, isFirstNode);
     if (0 < header.length)
     {
-      yield new Element(Kind.Header, undefinedTransfer, undefinedPersistance, "", header);
+      yield new Element(Kind.Header, undefinedTransfer, undefinedPersistance, undefinedDeclaration, "", header);
     }
     if (0 < rest.length)
     {
-      yield new Element(getKind(node), getTransfer(node), getPersistance(node), getName(node), rest);
+      yield new Element(getKind(node), getTransfer(node), getPersistance(node), getDeclaration(node), getName(node), rest);
     }
     isFirstNode = false;
   }
@@ -307,6 +331,8 @@ function getTransfer(node: Node): Transfer
 {
   return hasChildOfKind(node, SyntaxKind.ExportKeyword) ? Transfer.IsExported : undefinedTransfer;
 }
+
+declare function greet(g: string): void;
 
 async function handleFile(configPath: string, sourcePath: string): Promise<string>
 {
@@ -447,25 +473,29 @@ function readConfiguration(configuration: object)
   {
     const ignoreIfSingleLine = entry["ignoreIfSingleLine"] ?? false;
     let traitValues;
-    if ((traitValues = entry[comparatorNameKind]) !== undefined)
+    if ((traitValues = entry[Trait.Kind]) !== undefined)
     {
-      comparisons.push(getComparator(new TraitSortOrder(element => element.kind, toEnumerationValues<Kind>(Kind, traitValues)), comparatorNameKind, ignoreIfSingleLine));
+      comparisons.push(getComparator(new TraitSortOrder(element => element.kind, toEnumerationValues<Kind>(Kind, traitValues)), Trait.Kind, ignoreIfSingleLine));
     }
-    else if ((traitValues = entry[comparatorNameTransfer]) !== undefined)
+    else if ((traitValues = entry[Trait.Transfer]) !== undefined)
     {
-      comparisons.push(getComparator(new TraitSortOrder(element => element.transfer, toEnumerationValues<Transfer>(Transfer, traitValues)), comparatorNameTransfer, ignoreIfSingleLine));
+      comparisons.push(getComparator(new TraitSortOrder(element => element.transfer, toEnumerationValues<Transfer>(Transfer, traitValues)), Trait.Transfer, ignoreIfSingleLine));
     }
-    else if ((traitValues = entry[comparatorNamePersistance]) !== undefined)
+    else if ((traitValues = entry[Trait.Declaration]) !== undefined)
     {
-      comparisons.push(getComparator(new TraitSortOrder(element => element.persistance, toEnumerationValues<Persistance>(Persistance, traitValues)), comparatorNamePersistance, ignoreIfSingleLine));
+      comparisons.push(getComparator(new TraitSortOrder(element => element.declaration, toEnumerationValues<Declaration>(Declaration, traitValues)), Trait.Declaration, ignoreIfSingleLine));
     }
-    else if ((traitValues = entry[comparatorNamePattern]) !== undefined)
+    else if ((traitValues = entry[Trait.Persistance]) !== undefined)
     {
-      comparisons.push(getComparator(new PatternSortOrder(element => element.text, traitValues), comparatorNamePattern, ignoreIfSingleLine));
+      comparisons.push(getComparator(new TraitSortOrder(element => element.persistance, toEnumerationValues<Persistance>(Persistance, traitValues)), Trait.Persistance, ignoreIfSingleLine));
     }
-    else if ((traitValues = entry[comparatorNameName]) !== undefined)
+    else if ((traitValues = entry[Trait.Pattern]) !== undefined)
     {
-      comparisons.push(getComparator(new NameSortOrder(), comparatorNameName, ignoreIfSingleLine));
+      comparisons.push(getComparator(new PatternSortOrder(element => element.text, traitValues), Trait.Pattern, ignoreIfSingleLine));
+    }
+    else if ((traitValues = entry[Trait.Name]) !== undefined)
+    {
+      comparisons.push(getComparator(new NameSortOrder(), Trait.Name, ignoreIfSingleLine));
     }
   }
 }
