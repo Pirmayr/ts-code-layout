@@ -1,6 +1,6 @@
 {
   "name": "ts-code-layout",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Changes the layout of typescript files.",
   "main": "main.js",
   "type": "module",
